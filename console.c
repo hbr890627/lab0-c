@@ -397,6 +397,11 @@ static bool do_time(int argc, char *argv[])
     return ok;
 }
 
+static bool do_hello(int argc, char *argv[])
+{
+    return (bool) printf("Hello, World\n");
+}
+
 /* Initialize interpreter */
 void init_cmd()
 {
@@ -411,6 +416,7 @@ void init_cmd()
     ADD_COMMAND(source, " file           | Read commands from source file");
     ADD_COMMAND(log, " file           | Copy output to file");
     ADD_COMMAND(time, " cmd arg ...    | Time command execution");
+    ADD_COMMAND(hello, "                | Print hello message");
     add_cmd("#", do_comment_cmd, " ...            | Display comment");
     add_param("simulation", &simulation, "Start/Stop simulation mode", NULL);
     add_param("verbose", &verblevel, "Verbosity level", NULL);
