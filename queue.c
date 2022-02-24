@@ -93,10 +93,17 @@ bool q_insert_tail(struct list_head *head, char *s)
  */
 element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
 {
-    // if (!head || list_empty(head))
-    //     return NULL;
+    if (!head || list_empty(head))
+        return NULL;
 
-    return NULL;
+    element_t *node = list_first_entry(head, element_t, list);
+    list_del(head->next);
+
+    if (sp) {
+        strncpy(sp, node->value, bufsize);
+        sp[bufsize - 1] = '\0';
+    }
+    return node;
 }
 
 /*
@@ -105,7 +112,17 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
  */
 element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
 {
-    return NULL;
+    if (!head || list_empty(head))
+        return NULL;
+
+    element_t *node = list_last_entry(head, element_t, list);
+    list_del(head->prev);
+
+    if (sp) {
+        strncpy(sp, node->value, bufsize);
+        sp[bufsize - 1] = '\0';
+    }
+    return node;
 }
 
 /*
@@ -146,6 +163,17 @@ int q_size(struct list_head *head)
 bool q_delete_mid(struct list_head *head)
 {
     // https://leetcode.com/problems/delete-the-middle-node-of-a-linked-list/
+    if (!head || list_empty(head))
+        return false;
+
+    int mid = q_size(head) / 2;
+    struct list_head *node;
+    list_for_each (node, head) {
+        if (mid-- == 0)
+            break;
+    }
+    list_del(node);
+    q_release_element(list_entry(node, element_t, list));
     return true;
 }
 
