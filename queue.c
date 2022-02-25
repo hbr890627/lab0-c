@@ -97,7 +97,7 @@ element_t *q_remove_head(struct list_head *head, char *sp, size_t bufsize)
         return NULL;
 
     element_t *node = list_first_entry(head, element_t, list);
-    list_del(head->next);
+    list_del(&node->list);
 
     if (sp) {
         strncpy(sp, node->value, bufsize);
@@ -116,7 +116,7 @@ element_t *q_remove_tail(struct list_head *head, char *sp, size_t bufsize)
         return NULL;
 
     element_t *node = list_last_entry(head, element_t, list);
-    list_del(head->prev);
+    list_del(&node->list);
 
     if (sp) {
         strncpy(sp, node->value, bufsize);
@@ -166,14 +166,14 @@ bool q_delete_mid(struct list_head *head)
     if (!head || list_empty(head))
         return false;
 
-    int mid = q_size(head) / 2;
-    struct list_head *node;
-    list_for_each (node, head) {
-        if (mid-- == 0)
-            break;
+    struct list_head *slow = head->next, *fast = head->next;
+    while (fast != head && fast->next != head) {
+        slow = slow->next;
+        fast = fast->next->next;
     }
-    list_del(node);
-    q_release_element(list_entry(node, element_t, list));
+
+    list_del(slow);
+    q_release_element(list_entry(slow, element_t, list));
     return true;
 }
 
@@ -198,6 +198,16 @@ bool q_delete_dup(struct list_head *head)
 void q_swap(struct list_head *head)
 {
     // https://leetcode.com/problems/swap-nodes-in-pairs/
+    if (!head || list_empty(head))
+        return;
+
+    struct list_head *node = head->next;
+    while (node != head && node->next != head) {
+        struct list_head *next = node->next;
+        list_del(node);
+        list_add(node, next);
+        node = node->next;
+    }
 }
 
 /*
@@ -221,9 +231,17 @@ void q_reverse(struct list_head *head)
 }
 
 
+
 /*
  * Sort elements of queue in ascending order
  * No effect if q is NULL or empty. In addition, if q has only one
  * element, do nothing.
  */
-void q_sort(struct list_head *head) {}
+void q_sort(struct list_head *head)
+{
+    if (!head || list_empty(head) || list_is_singular(head))
+        return;
+}
+
+
+// void q_merge()
