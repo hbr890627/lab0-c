@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,11 +49,17 @@ void q_free(struct list_head *l)
  */
 bool q_insert_head(struct list_head *head, char *s)
 {
+    if (!head)
+        return false;
     element_t *e = malloc(sizeof(element_t));
     if (!e)
         return false;
-    e->value = malloc(sizeof(char) * (strlen(s) + 1));
-    strncpy(e->value, s, strlen(s));
+    e->value = malloc(sizeof(char) * (strlen(s)) + 1);
+    if (!e->value) {
+        free(e);
+        return false;
+    }
+    strncpy(e->value, s, strlen(s) + 1);
     *(e->value + strlen(s)) = '\0';
     list_add(&e->list, head);
     return true;
@@ -67,10 +74,16 @@ bool q_insert_head(struct list_head *head, char *s)
  */
 bool q_insert_tail(struct list_head *head, char *s)
 {
+    if (!head)
+        return false;
     element_t *e = malloc(sizeof(element_t));
     if (!e)
         return false;
     e->value = malloc(sizeof(char) * (strlen(s) + 1));
+    if (!e->value) {
+        free(e);
+        return false;
+    }
     strncpy(e->value, s, strlen(s));
     *(e->value + strlen(s)) = '\0';
     list_add_tail(&e->list, head);
@@ -188,7 +201,21 @@ bool q_delete_mid(struct list_head *head)
  */
 bool q_delete_dup(struct list_head *head)
 {
-    // https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/
+    // https://leetcode.com/problems/remove-duplicates-from-sorted-list-ii/)
+    if (!head)
+        return false;
+
+    element_t *entry, *safe;
+    char *value = "";
+    list_for_each_entry_safe (entry, safe, head, list) {
+        if (strcmp(value, entry->value) == 0) {
+            list_del(&entry->list);
+            q_release_element(entry);
+        } else {
+            value = entry->value;
+        }
+    }
+
     return true;
 }
 
@@ -230,7 +257,44 @@ void q_reverse(struct list_head *head)
     }
 }
 
+/*
+ * The sub-function of q_sort
+ */
+struct list_head *mergeTwoLists(struct list_head *h1, struct list_head *h2)
+{
+    struct list_head *head = NULL, **ptr = &head, **node;
 
+    for (node = NULL; h1 && h2; *node = (*node)->next) {
+        node = strcmp(list_entry(h1, element_t, list)->value,
+                      list_entry(h2, element_t, list)->value) < 0
+                   ? &h1
+                   : &h2;
+        *ptr = *node;
+        ptr = &(*ptr)->next;
+    }
+    *ptr = (struct list_head *) ((uintptr_t) h1 | (uintptr_t) h2);
+    return head;
+}
+
+/*
+ * The sub-function of q_sort
+ */
+struct list_head *mergesort(struct list_head *head)
+{
+    if (!head || !head->next)
+        return head;
+
+    // find middle node
+    struct list_head *slow = head;
+    for (struct list_head *fast = head->next; fast && fast->next;
+         fast = fast->next->next)
+        slow = slow->next;
+    struct list_head *mid = slow->next;
+    slow->next = NULL;
+
+    struct list_head *left = mergesort(head), *right = mergesort(mid);
+    return mergeTwoLists(left, right);
+}
 
 /*
  * Sort elements of queue in ascending order
@@ -239,9 +303,22 @@ void q_reverse(struct list_head *head)
  */
 void q_sort(struct list_head *head)
 {
-    if (!head || list_empty(head) || list_is_singular(head))
+    if (!head || list_empty(head))
         return;
+
+    head->prev->next = NULL;
+    head->next->prev = NULL;
+
+    struct list_head *sorted = mergesort(head->next);
+
+    // link head & fix prev
+    head->next = sorted;
+    sorted->prev = head;
+    struct list_head *temp = sorted;
+    while (temp->next) {
+        temp->next->prev = temp;
+        temp = temp->next;
+    }
+    head->prev = temp;
+    temp->next = head;
 }
-
-
-// void q_merge()
